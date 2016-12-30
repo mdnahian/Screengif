@@ -13,14 +13,12 @@ import android.media.MediaRecorder;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.support.v4.content.FileProvider;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -413,14 +411,18 @@ public class MainActivity extends AppCompatActivity {
                         }
                     } else {
 
-                        Intent intent = new Intent();
-                        intent.setAction(Intent.ACTION_VIEW);
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                            intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                            intent.setDataAndType(FileProvider.getUriForFile(MainActivity.this, getApplicationContext().getPackageName()+".provider", file), "image/*");
-                        } else {
-                            intent.setDataAndType(Uri.fromFile(file), "image/*");
-                        }
+//                        Intent intent = new Intent();
+//                        intent.setAction(Intent.ACTION_VIEW);
+//                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+//                            intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+//                            intent.setDataAndType(FileProvider.getUriForFile(MainActivity.this, getApplicationContext().getPackageName()+".provider", file), "image/*");
+//                        } else {
+//                            intent.setDataAndType(Uri.fromFile(file), "image/*");
+//                        }
+//                        startActivity(intent);
+
+                        Intent intent = new Intent(MainActivity.this, GifViewerActivity.class);
+                        intent.putExtra("filePath", file.getPath());
                         startActivity(intent);
 
                     }

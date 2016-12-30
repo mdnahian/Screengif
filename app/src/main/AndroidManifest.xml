@@ -27,6 +27,11 @@
             </intent-filter>
         </activity>
 
+        <activity android:name=".GifViewerActivity"
+            android:screenOrientation="portrait"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+            android:parentActivityName=".MainActivity"/>
+
         <provider
             android:name="android.support.v4.content.FileProvider"
             android:authorities="com.example.myapp.fileprovider"
