@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Screengif</string>
+    <string name="action_settings">Settings</string>
+    <string name="delete">Delete</string>
+</resources>
