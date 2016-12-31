@@ -9,11 +9,13 @@ import android.graphics.drawable.ColorDrawable;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.icu.text.SimpleDateFormat;
+import android.icu.util.TimeZone;
 import android.media.MediaRecorder;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.Environment;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
@@ -87,6 +89,13 @@ public class MainActivity extends AppCompatActivity {
 
 
     private boolean initalLoad = true;
+
+
+    private long start_time = 0;
+    private long stop_time = 0;
+
+    private long mStart = 0;
+    private long mStop = 0;
 
 
 
@@ -177,6 +186,21 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean onPrepareActionMode(ActionMode actionMode, Menu menu) {
                 getSupportActionBar().hide();
+
+                isSelecting = false;
+
+                new CountDownTimer(1000, 1000){
+                    @Override
+                    public void onTick(long l) {
+
+                    }
+
+                    @Override
+                    public void onFinish() {
+                        isSelecting = true;
+                    }
+                }.start();
+
                 return false;
             }
 
@@ -211,7 +235,7 @@ public class MainActivity extends AppCompatActivity {
                 getSupportActionBar().show();
 
                 for (int i=0; i< gifsAdapter.getCount(); i++){
-                    View view = gifsview.getChildAt(i - gifsview.getFirstVisiblePosition());
+                    View view = gifsview.getChildAt(i);
 
                     if(view == null){
                         return;
@@ -222,8 +246,16 @@ public class MainActivity extends AppCompatActivity {
                     ImageView check = (ImageView) view.findViewById(R.id.check);
 
                     check.setVisibility(View.GONE);
-                    gif.setForeground(new ColorDrawable(ContextCompat.getColor(MainActivity.this, R.color.colorNone)));
 
+                    try {
+                        gif.setForeground(new ColorDrawable(ContextCompat.getColor(MainActivity.this, R.color.colorNone)));
+                    } catch (Error e){
+
+                    }
+
+
+                    gif.setSelected(false);
+                    view.setSelected(false);
                 }
 
                 if(gifsAdapter.getCount() == 0){
@@ -247,7 +279,6 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
                 if(checkPermissions()){
                     if (isRecording) {
                         stopRecording();
@@ -258,10 +289,10 @@ public class MainActivity extends AppCompatActivity {
 
                     onToggleScreenShare();
                 }
-
-
             }
         });
+
+
 
 
 
@@ -302,6 +333,33 @@ public class MainActivity extends AppCompatActivity {
 
 
 
+
+
+    private void reset(){
+
+       shareScreen();
+
+        new CountDownTimer(1000, 1000){
+            @Override
+            public void onTick(long l) {
+
+            }
+
+            @Override
+            public void onFinish() {
+                stopScreen();
+                spinner.setVisibility(View.GONE);
+            }
+        }.start();
+
+    }
+
+
+
+
+
+
+
     private void getAllGifs(){
 
         gifs.clear();
@@ -335,11 +393,24 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
-        deleteAllMP4Files();
-
         gifsview.setAdapter(gifsAdapter);
 
     }
+
+
+
+
+    private void deleteMP4File(){
+
+        try {
+            file.delete();
+        } catch (Exception e){
+            Log.d("Crash", e.getMessage());
+        }
+
+
+    }
+
 
 
 
@@ -400,14 +471,23 @@ public class MainActivity extends AppCompatActivity {
                             gifsview.setItemChecked(position, false);
 
                             check.setVisibility(View.GONE);
-                            gif.setForeground(new ColorDrawable(ContextCompat.getColor(MainActivity.this, R.color.colorNone)));
+
+                            try {
+                                gif.setForeground(new ColorDrawable(ContextCompat.getColor(MainActivity.this, R.color.colorNone)));
+                            } catch (Error e){
+
+                            }
 
                         } else {
                             gifsview.setItemChecked(position, true);
 
                             check.setVisibility(View.VISIBLE);
-                            gif.setForeground(new ColorDrawable(ContextCompat.getColor(MainActivity.this, R.color.colorDark)));
 
+                            try {
+                                gif.setForeground(new ColorDrawable(ContextCompat.getColor(MainActivity.this, R.color.colorDark)));
+                            } catch (Error e){
+
+                            }
                         }
                     } else {
 
@@ -439,7 +519,13 @@ public class MainActivity extends AppCompatActivity {
                         gifsview.setItemChecked(position, true);
 
                         check.setVisibility(View.VISIBLE);
-                        gif.setForeground(new ColorDrawable(ContextCompat.getColor(MainActivity.this, R.color.colorDark)));
+
+                        try {
+                            gif.setForeground(new ColorDrawable(ContextCompat.getColor(MainActivity.this, R.color.colorDark)));
+
+                        } catch (Error e){
+                            Log.d("Crash", e.getMessage());
+                        }
 
                         isSelecting = true;
                     }
@@ -492,12 +578,28 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    @Override
+    protected void onPause() {
+
+        if(isRecording) {
+            start_time = System.currentTimeMillis();
+        }
 
 
+        super.onPause();
+    }
 
 
+    @Override
+    protected void onResume() {
 
+        if(isRecording){
+            stop_time = System.currentTimeMillis();
+        }
 
+        super.onResume();
+
+    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
@@ -706,6 +808,18 @@ public class MainActivity extends AppCompatActivity {
 
 
 
+    private String convertSecondToHHMMString(int secondtTime) {
+
+        TimeZone tz = TimeZone.getTimeZone("UTC");
+        SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss");
+        df.setTimeZone(tz);
+        String time = df.format(new Date(secondtTime*1000L));
+
+        return time;
+
+    }
+
+
 
 
     private void convertToGif() {
@@ -724,6 +838,32 @@ public class MainActivity extends AppCompatActivity {
 
                     String[] cmd = {"-i", new File(dir, child).getPath(), getOutputMediaFile(MEDIA_TYPE_IMAGE).getPath()};
 
+                    try {
+
+                        long elapsed_time_start = start_time - mStart;
+                        long elapsed_time_stop = stop_time - mStop;
+
+                        long elapsed_time = mStop - mStart;
+
+                        double elapsed_sec = (elapsed_time - (elapsed_time_start + elapsed_time_stop)) / 1000.0;
+
+                        long start = start_time - mStart;
+                        int elapsed_sec_start = (int) Math.ceil(start / 1000.0);
+
+                        Log.d("Crash", elapsed_sec+" "+start+" "+elapsed_sec_start);
+
+                        if(elapsed_sec_start > 0) {
+
+                            String ss = convertSecondToHHMMString(elapsed_sec_start);
+
+                            cmd = new String[]{"-t", Double.toString(Math.floor(elapsed_sec)), "-ss", ss, "-i", new File(dir, child).getPath(), getOutputMediaFile(MEDIA_TYPE_IMAGE).getPath()};
+                        }
+                    } catch (Exception e){
+                        Log.d("Crash", "Failed to get elapsed time");
+                    } catch (Error e){
+                        Log.d("Crash", "Failed to get elapsed time");
+                    }
+
                     FFmpeg ffmpeg = FFmpeg.getInstance(MainActivity.this);
                     try {
                         // to execute "ffmpeg -version" command you just need to pass "-version"
@@ -736,12 +876,12 @@ public class MainActivity extends AppCompatActivity {
 
                             @Override
                             public void onProgress(String message) {
-                                Log.d("Crash", message);
+//                                Log.d("Crash", message);
                             }
 
                             @Override
                             public void onFailure(String message) {
-                                Log.d("Crash", message);
+//                                Log.d("Crash", message);
 
                                 count++;
 
@@ -753,21 +893,27 @@ public class MainActivity extends AppCompatActivity {
 
                             @Override
                             public void onSuccess(String message) {
-                                Log.d("Crash", message);
+//                                Log.d("Crash", message);
 
 
                                 getAllGifs();
-                                spinner.setVisibility(View.GONE);
+                                deleteAllMP4Files();
+                                reset();
+
+                                start_time = 0;
+                                stop_time = 0;
+                                mStart = 0;
+                                mStop = 0;
 
                             }
 
                             @Override
                             public void onFinish() {
-                                spinner.setVisibility(View.GONE);
+//                                spinner.setVisibility(View.GONE);
                             }
                         });
                     } catch (FFmpegCommandAlreadyRunningException e) {
-                        Log.d("Crash", e.getMessage());
+//                        Log.d("Crash", e.getMessage());
                         failedToConvertGif();
                     }
 
@@ -792,7 +938,7 @@ public class MainActivity extends AppCompatActivity {
         AlertDialog alertDialog = new AlertDialog.Builder(MainActivity.this).create();
         alertDialog.setTitle("Could not Record Gif");
         alertDialog.setIcon(R.drawable.icon);
-        alertDialog.setMessage("Screengif may be too long. Please try again.");
+        alertDialog.setMessage("There was a problem recording your GIF. Please try again.");
         alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
                 new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
@@ -972,11 +1118,15 @@ public class MainActivity extends AppCompatActivity {
     private void startRecording() {
         fab.setImageDrawable(getResources().getDrawable(R.drawable.stop));
         isRecording = true;
+
+        mStart = System.currentTimeMillis();
     }
 
     private void stopRecording() {
         fab.setImageDrawable(getResources().getDrawable(R.drawable.record));
         isRecording = false;
+
+        mStop = System.currentTimeMillis();
     }
 
 
